@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1.0, user-scalable=no" />
+  <title>かぞえて10｜数える練習</title>
+  <style>
+    :root{
+      --bg:#f7fafc; --ink:#0f172a; --muted:#64748b;
+      --accent:#22c55e; --accent2:#2563eb;
+      --card:#ffffff; --ring:#dbeafe;
+      --radius:24px; --shadow:0 10px 28px rgba(0,0,0,.08);
+      --gap:12px;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; background: var(--bg); color: var(--ink); -webkit-tap-highlight-color: transparent; }
+    body { margin:0; font-family: system-ui, -apple-system, "BIZ UDPGothic", "Hiragino Sans", "Noto Sans JP", "Yu Gothic", Meiryo, sans-serif; }
+    .wrap { min-height: 100svh; display: grid; place-items: center; padding: 16px; }
+    .app  { width: 100%; max-width: 1100px; }
+
+    .screen { display: none; }
+    .screen.active { display: flex; flex-direction: column; gap: calc(var(--gap) * 1.0); }
+
+    .card { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); }
+
+    .title { text-align: center; padding: 32px 24px; }
+    .title h1 { font-size: clamp(28px, 5.2vw, 48px); margin: 0 0 8px; font-weight: 800; letter-spacing: .02em; }
+    .title p  { margin: 0; color: var(--muted); font-size: clamp(13px, 1.9vw, 17px); }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      padding: 14px 24px; border-radius: 18px; border: 2px solid transparent;
+      font-weight: 800; cursor: pointer; user-select: none;
+      transition: transform .06s ease, opacity .15s ease, border-color .15s ease;
+      background: var(--accent); color: #fff;
+    }
+    .btn:active { transform: translateY(1px); }
+    .btn.alt { background: #fff; color: #111; border-color: #e5e7eb; box-shadow: var(--shadow); }
+
+    header.gamebar { display: flex; align-items: center; justify-content: space-between; }
+    header .info { color: var(--muted); font-size: clamp(12px, 1.9vw, 16px); }
+
+    .stage { padding: 10px; position: relative; }
+    .play-area {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 4/3;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      grid-template-rows: repeat(4, 1fr);
+      gap: 8px;
+    }
+    .cell   { display: flex; align-items: center; justify-content: center; }
+    .item   {
+      font-size: clamp(52px, 8vmin, 96px);
+      line-height: 1;
+      filter: grayscale(70%) saturate(90%) brightness(0.95);
+      transition: transform .14s ease, filter .14s ease;
+      cursor: pointer; user-select: none; touch-action: manipulation;
+    }
+    .item.on { filter: none; transform: scale(1.08); }
+    .item:active { transform: scale(0.96); }
+
+    .overlay {
+      position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+      pointer-events: none;
+    }
+    .cele {
+      background: rgba(255,255,255,.9);
+      backdrop-filter: blur(2px);
+      border-radius: 24px; padding: 28px 32px; text-align: center; box-shadow: var(--shadow);
+      pointer-events: auto;
+    }
+    .cele h2 { margin: 0 0 6px; font-size: clamp(26px, 4.6vmin, 40px); color: #166534; }
+    .cele p  { margin: 0 0 16px; color: var(--muted); }
+    .pop { animation: pop .28s ease; }
+    @keyframes pop { from { transform: scale(.92); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+    .shake { animation: shake .25s linear; }
+    @keyframes shake {
+      0%,100%{ transform: translateX(0); }
+      25% { transform: translateX(-6px); }
+      75% { transform: translateX(6px); }
+    }
+
+    .fx { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+    .confetti { position: absolute; width: 10px; height: 10px; border-radius: 2px; opacity: 0; animation: fall 700ms ease-out forwards; }
+    @keyframes fall {
+      0%  { transform: translateY(-10px) scale(1); opacity: 0; }
+      20% { opacity: 1; }
+      100%{ transform: translateY(80px) rotate(45deg) scale(.9); opacity: 0; }
+    }
+
+    .numpad {
+      display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px;
+    }
+    .nbtn {
+      padding: 16px 0; border-radius: 18px; background: #fff; box-shadow: var(--shadow);
+      border: 2px solid transparent; font-weight: 800; font-size: clamp(18px,4.4vmin,28px);
+      cursor: pointer; user-select: none; touch-action: manipulation;
+      transition: transform .06s ease, opacity .15s ease, border-color .15s ease;
+    }
+    .nbtn:active { transform: translateY(1px); }
+    .nbtn[disabled] { opacity: .6; }
+
+    .result { padding: 40px 24px; text-align: center; }
+    .result h2 { margin: 0 0 8px; font-size: clamp(28px, 5.2vw, 48px); }
+    .result p  { margin: 0 0 6px; color: var(--muted); font-size: clamp(14px, 2.2vw, 18px); }
+
+    .sr-only { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px;
+      overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="app">
+
+      <!-- タイトル -->
+      <section id="screenTitle" class="screen active">
+        <div class="title card">
+          <h1>かぞえて<span style="color:#16a34a">10</span></h1>
+          <p>えもじを さわって かぞえよう。 ただしい かずを したの すうじで えらぶよ。</p>
+          <div style="margin-top: 20px;">
+            <button id="btnStart" class="btn">スタート</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ゲーム -->
+      <section id="screenGame" class="screen">
+        <header class="gamebar">
+          <div class="info">もんだい <span id="qNow">1</span> / <span id="qTotal">10</span></div>
+          <button id="btnQuit" class="btn alt">やめる</button>
+        </header>
+
+        <div class="stage card">
+          <div id="playArea" class="play-area">
+            <div id="fxLayer" class="fx"></div>
+          </div>
+
+          <!-- 正解オーバーレイ（初期は非表示） -->
+          <div id="overlay" class="overlay" hidden style="display:none">
+            <div id="celeBox" class="cele">
+              <h2>せいかい！</h2>
+              <p>よく かぞえられたね</p>
+              <button id="btnNext" class="btn">つぎへ ▶</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="numPad" class="numpad"></div>
+      </section>
+
+      <!-- 結果（スコア表示なし） -->
+      <section id="screenResult" class="screen">
+        <div class="result card">
+          <h2>がんばったね！</h2>
+          <p>どこでも タップすると タイトルにもどるよ</p>
+        </div>
+      </section>
+
+    </div>
+
+    <div id="live" class="sr-only" aria-live="polite"></div>
+  </div>
+
+  <script>
+  'use strict';
+
+  // ====== 状態 ======
+  const TOTAL = 10;
+  let round = 0;
+  let answer = 0;
+  let correct = 0;
+  let currentEmoji = '🍅';
+
+  const EMOJI_SET = ['🍅','🐟','🐡','🐠','🥦','🌱','🍆','🌶️','🌽','🧅','🍠','🐷','🐱','🐸','🐒','🪿','🦆','🦇','🐝','🐞','🦋','🪲','💩'];
+
+  // ====== DOM ======
+  const scrTitle  = document.getElementById('screenTitle');
+  const scrGame   = document.getElementById('screenGame');
+  const scrResult = document.getElementById('screenResult');
+
+  const qNow   = document.getElementById('qNow');
+  const qTotal = document.getElementById('qTotal');
+  const playArea = document.getElementById('playArea');
+  const fxLayer  = document.getElementById('fxLayer');
+  const numPad   = document.getElementById('numPad');
+  const overlay  = document.getElementById('overlay');
+  const celeBox  = document.getElementById('celeBox');
+  const btnNext  = document.getElementById('btnNext');
+
+  const btnStart = document.getElementById('btnStart');
+  const btnQuit  = document.getElementById('btnQuit');
+
+  const live  = document.getElementById('live');
+
+  qTotal.textContent = TOTAL;
+
+  // ====== ユーティリティ ======
+  function safeScrollTop(){
+    try { window.scrollTo({ top: 0, behavior: 'auto' }); }
+    catch { try { window.scrollTo(0,0); } catch(_){} }
+  }
+  function clamp(n,min,max){ return Math.min(max, Math.max(min, n)); }
+  function toSafeInt(n, fallback=0){
+    const x = Number(n);
+    if(!Number.isFinite(x)) return fallback;
+    const i = Math.floor(x);
+    return i < 0 ? 0 : i;
+  }
+  function shuffle(arr){
+    for(let i=arr.length-1; i>0; i--){
+      const j = Math.floor(Math.random()*(i+1));
+      [arr[i],arr[j]] = [arr[j],arr[i]];
+    }
+    return arr;
+  }
+  function show(el){
+    [scrTitle, scrGame, scrResult].forEach(s => s.classList.remove('active'));
+    el.classList.add('active');
+    safeScrollTop();
+  }
+
+  // ====== BGM（Web Audio） ======
+  class SimpleBGM{
+    constructor(){
+      this.ctx=null; this.gain=null; this.isOn=false;
+      this.tempo=92; this.nextTime=0; this.lookAhead=0.2; this.tid=null;
+    }
+    ensure(){
+      if(!this.ctx){
+        this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+        this.gain = this.ctx.createGain();
+        this.gain.gain.value = 0.06;
+        this.gain.connect(this.ctx.destination);
+        this.nextTime = this.ctx.currentTime + 0.05;
+      }
+    }
+    note(t,f,d=0.18){
+      const o=this.ctx.createOscillator(), g=this.ctx.createGain();
+      o.type='triangle'; o.frequency.setValueAtTime(f,t);
+      g.gain.setValueAtTime(0,t);
+      g.gain.linearRampToValueAtTime(0.5, t+0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, t+d);
+      o.connect(g).connect(this.gain); o.start(t); o.stop(t+d+0.02);
+    }
+    start(){
+      this.ensure();
+      if(this.isOn) return;
+      this.isOn=true; this.ctx.resume();
+      const beat = 60/this.tempo;
+      const scale = [261.63, 329.63, 392.00, 523.25];
+      const pattern = [0,1,2,1, 0,1,2,3];
+      let step=0;
+      this.tid = setInterval(()=>{
+        const ct=this.ctx.currentTime;
+        while(this.nextTime < ct + this.lookAhead){
+          const f = scale[ pattern[ step % pattern.length ] ];
+          this.note(this.nextTime, f, 0.16);
+          this.nextTime += beat; step++;
+        }
+      }, 50);
+    }
+    stop(){
+      if(!this.ctx) return;
+      this.isOn=false;
+      if(this.tid){ clearInterval(this.tid); this.tid=null; }
+      try{
+        this.gain.gain.cancelScheduledValues(this.ctx.currentTime);
+        this.gain.gain.setTargetAtTime(0, this.ctx.currentTime, 0.02);
+      }catch(_) {}
+    }
+  }
+  const bgm = new SimpleBGM();
+
+  // ====== ゲーム進行 ======
+  btnStart.addEventListener('click', startGame, { passive: true });
+  btnQuit .addEventListener('click', resetToTitle, { passive: true });
+  btnNext .addEventListener('click', () => { hideOverlay(); nextRound(); }, { passive: true });
+
+  function startGame(){
+    round=0; correct=0; answer=0;
+    show(scrGame);
+    bgm.start();
+    nextRound();
+  }
+
+  function resetToTitle(){
+    bgm.stop();
+    hideOverlay(true); // 強制で隠す
+    round=0; correct=0; answer=0;
+    qNow.textContent = 1;
+    playArea.querySelectorAll('.cell').forEach(el=>el.remove());
+    fxLayer.innerHTML = '';
+    enableNumPad(true);
+    show(scrTitle);
+  }
+
+  function nextRound(){
+    hideOverlay(); // 念のため先に隠す
+    round++;
+    if(round > TOTAL){ finish(); return; }
+    qNow.textContent = round;
+
+    // 1..10
+    answer = clamp(Math.floor(Math.random()*10)+1, 1, 10);
+    // 絵柄ランダム（空なら🍅）
+    currentEmoji = (EMOJI_SET && EMOJI_SET.length>0)
+      ? EMOJI_SET[Math.floor(Math.random()*EMOJI_SET.length)]
+      : '🍅';
+
+    renderItems(answer);
+    enableNumPad(true);
+  }
+
+  function renderItems(n){
+    playArea.querySelectorAll('.cell').forEach(el=>el.remove());
+    fxLayer.innerHTML = '';
+
+    const rows=4, cols=5;
+    let total=toSafeInt(rows*cols, 20);
+    if(total<1) total=20; if(total>5000) total=5000;
+
+    const need = clamp(toSafeInt(n,1), 0, total);
+    const cells = Array.from({ length: total }, (_,i)=>i);
+    shuffle(cells);
+    const picked = cells.slice(0, need);
+
+    for(const idx of picked){
+      const r=Math.floor(idx/cols), c=idx%cols;
+      const cell=document.createElement('div'); cell.className='cell';
+      cell.style.gridRowStart = String(r+1);
+      cell.style.gridColumnStart = String(c+1);
+      const span=document.createElement('span'); span.className='item'; span.textContent=currentEmoji;
+      span.addEventListener('click', ()=> span.classList.toggle('on'), { passive:true });
+      cell.appendChild(span); playArea.appendChild(cell);
+    }
+  }
+
+  // 数字ボタン 1..10
+  function buildNumPad(){
+    numPad.innerHTML = '';
+    for(let i=1;i<=10;i++){
+      const b=document.createElement('button');
+      b.className='nbtn'; b.textContent=i; b.dataset.v=String(i);
+      b.addEventListener('click', onAnswer, { passive:true });
+      numPad.appendChild(b);
+    }
+  }
+  buildNumPad();
+
+  function enableNumPad(on){
+    for(const b of numPad.children){
+      b.disabled = !on;
+      b.style.opacity = on ? '1' : '.6';
+    }
+  }
+
+  function onAnswer(e){
+    const v = Number(e.currentTarget.dataset.v);
+    if(v === answer){
+      correct++;
+      showCorrect();
+    }else{
+      giveWrongFeedback();
+    }
+  }
+
+  function showCorrect(){
+    enableNumPad(false);
+    overlay.hidden = false;
+    overlay.style.display = 'flex';
+    celeBox.classList.remove('pop'); void celeBox.offsetWidth; celeBox.classList.add('pop');
+    live.textContent = 'せいかい';
+    sprinkleConfetti();
+  }
+
+  function hideOverlay(force=false){
+    overlay.hidden = true;
+    overlay.style.display = 'none';
+    if(force){ fxLayer.innerHTML = ''; }
+  }
+
+  function sprinkleConfetti(){
+    const colors = ['#22c55e','#16a34a','#86efac','#f59e0b','#ef4444','#60a5fa'];
+    const rect = fxLayer.getBoundingClientRect();
+    const count = 24;
+    for(let i=0;i<count;i++){
+      const d=document.createElement('div');
+      d.className='confetti';
+      d.style.background = colors[Math.floor(Math.random()*colors.length)];
+      d.style.left = (rect.width/2 - 60 + Math.random()*120) + 'px';
+      d.style.top  = '20px';
+      fxLayer.appendChild(d);
+      setTimeout(()=> d.remove(), 800);
+    }
+  }
+
+  function giveWrongFeedback(){
+    numPad.classList.remove('shake'); void numPad.offsetWidth;
+    numPad.classList.add('shake');
+    if(navigator.vibrate) navigator.vibrate(80);
+  }
+
+  function finish(){
+    hideOverlay(); // 念のため閉じる
+    show(scrResult);      // スコア表示はしない
+  }
+  scrResult.addEventListener('click', resetToTitle, { passive:true });
+
+  // ====== 簡易テスト（内部追加） ======
+  (function selfTest(){
+    const req = ['qNow','qTotal','playArea','fxLayer','numPad','live','overlay','celeBox','btnNext','btnQuit','screenTitle','screenGame','screenResult'];
+    const miss = req.filter(id => !document.getElementById(id));
+    if(miss.length) console.error('[TEST] Missing elements:', miss);
+    else console.log('[TEST] All required elements exist.');
+
+    // 乱数レンジ
+    let ok=true; for(let i=0;i<100;i++){ const v=Math.floor(Math.random()*10)+1; if(v<1||v>10){ ok=false; break; } }
+    console.log('[TEST] Random range 1..10:', ok?'OK':'NG');
+
+    // overlay toggle
+    try{
+      showCorrect();
+      const shown = !overlay.hidden && getComputedStyle(overlay).display !== 'none';
+      hideOverlay(true);
+      const hidden = overlay.hidden && getComputedStyle(overlay).display === 'none';
+      console.log('[TEST] overlay toggle:', (shown && hidden) ? 'OK' : 'NG');
+    }catch(e){ console.error('[TEST] overlay toggle:', e); }
+
+    // renderItemsの堅牢性
+    try{ renderItems(10); console.log('[TEST] renderItems(10): OK'); }catch(e){ console.error('[TEST] renderItems(10):', e); }
+    try{ renderItems(0);  console.log('[TEST] renderItems(0): OK'); }catch(e){ console.error('[TEST] renderItems(0):', e); }
+    try{ renderItems(-5); console.log('[TEST] renderItems(-5): OK'); }catch(e){ console.error('[TEST] renderItems(-5):', e); }
+    try{ renderItems(999);console.log('[TEST] renderItems(999): OK'); }catch(e){ console.error('[TEST] renderItems(999):', e); }
+  })();
+
+  // iOS ピンチズーム抑制（任意）
+  document.addEventListener('gesturestart', (e)=>{ try{ e.preventDefault(); }catch(_){} }, { passive:false });
+  </script>
+</body>
+</html>
