@@ -12,24 +12,32 @@
       --card:#ffffff; --ring:#dbeafe;
       --radius:24px; --shadow:0 10px 28px rgba(0,0,0,.08);
       --gap:12px;
+
+      /* レイアウト計算で更新する動的値 */
+      --safeH: 100svh;          /* JSで innerHeight に上書き */
+      --playH: 60vh;            /* プレイ領域の上限高さ（JSで調整） */
+      --itemFz: 72px;           /* 絵文字サイズ（JSで調整） */
+      --nbtnFz: 24px;           /* 数字ボタン文字サイズ（JSで調整） */
+      --nbtnPy: 14px;           /* 数字ボタン縦padding（JSで調整） */
+      --gridGap: 8px;           /* マス間の隙間（JSで調整） */
     }
     * { box-sizing: border-box; }
     html, body { height: 100%; background: var(--bg); color: var(--ink); -webkit-tap-highlight-color: transparent; }
     body { margin:0; font-family: system-ui, -apple-system, "BIZ UDPGothic", "Hiragino Sans", "Noto Sans JP", "Yu Gothic", Meiryo, sans-serif; }
-    .wrap { min-height: 100svh; display: grid; place-items: center; padding: 16px; }
+    .wrap { min-height: var(--safeH); display: grid; place-items: center; padding: 16px; overflow: hidden; }
     .app  { width: 100%; max-width: 1100px; }
 
-    .screen { display: none; }
+    .screen { display: none; max-height: calc(var(--safeH) - 32px); overflow: hidden; }
     .screen.active { display: flex; flex-direction: column; gap: calc(var(--gap) * 1.0); }
 
     .card { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); }
 
-    .title { text-align: center; padding: 32px 24px; }
+    .title { text-align: center; padding: 24px; }
     .title h1 { font-size: clamp(28px, 5.2vw, 48px); margin: 0 0 8px; font-weight: 800; letter-spacing: .02em; }
     .title p  { margin: 0; color: var(--muted); font-size: clamp(13px, 1.9vw, 17px); }
     .btn {
       display: inline-flex; align-items: center; justify-content: center;
-      padding: 14px 24px; border-radius: 18px; border: 2px solid transparent;
+      padding: 12px 20px; border-radius: 18px; border: 2px solid transparent;
       font-weight: 800; cursor: pointer; user-select: none;
       transition: transform .06s ease, opacity .15s ease, border-color .15s ease;
       background: var(--accent); color: #fff;
@@ -37,22 +45,25 @@
     .btn:active { transform: translateY(1px); }
     .btn.alt { background: #fff; color: #111; border-color: #e5e7eb; box-shadow: var(--shadow); }
 
-    header.gamebar { display: flex; align-items: center; justify-content: space-between; }
+    header.gamebar { display: flex; align-items: center; justify-content: space-between; padding: 0 2px; }
     header .info { color: var(--muted); font-size: clamp(12px, 1.9vw, 16px); }
 
-    .stage { padding: 10px; position: relative; }
+    .stage { padding: 8px; position: relative; }
     .play-area {
       position: relative;
       width: 100%;
+      /* 横幅優先だと高さが溢れるため、max-heightを優先して縮むようにする */
       aspect-ratio: 4/3;
+      max-height: var(--playH);
       display: grid;
       grid-template-columns: repeat(5, 1fr);
       grid-template-rows: repeat(4, 1fr);
-      gap: 8px;
+      gap: var(--gridGap);
+      margin-inline: auto;
     }
     .cell   { display: flex; align-items: center; justify-content: center; }
     .item   {
-      font-size: clamp(52px, 8vmin, 96px);
+      font-size: var(--itemFz);
       line-height: 1;
       filter: grayscale(70%) saturate(90%) brightness(0.95);
       transition: transform .14s ease, filter .14s ease;
@@ -68,11 +79,11 @@
     .cele {
       background: rgba(255,255,255,.9);
       backdrop-filter: blur(2px);
-      border-radius: 24px; padding: 28px 32px; text-align: center; box-shadow: var(--shadow);
+      border-radius: 24px; padding: 20px 24px; text-align: center; box-shadow: var(--shadow);
       pointer-events: auto;
     }
-    .cele h2 { margin: 0 0 6px; font-size: clamp(26px, 4.6vmin, 40px); color: #166534; }
-    .cele p  { margin: 0 0 16px; color: var(--muted); }
+    .cele h2 { margin: 0 0 6px; font-size: clamp(22px, 4.0vmin, 36px); color: #166534; }
+    .cele p  { margin: 0 0 12px; color: var(--muted); font-size: clamp(12px, 1.8vmin, 16px); }
     .pop { animation: pop .28s ease; }
     @keyframes pop { from { transform: scale(.92); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
@@ -92,23 +103,32 @@
     }
 
     .numpad {
-      display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px;
+      display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px;
+      padding: 2px 2px 8px;
     }
     .nbtn {
-      padding: 16px 0; border-radius: 18px; background: #fff; box-shadow: var(--shadow);
-      border: 2px solid transparent; font-weight: 800; font-size: clamp(18px,4.4vmin,28px);
+      padding: var(--nbtnPy) 0; border-radius: 16px; background: #fff; box-shadow: var(--shadow);
+      border: 2px solid transparent; font-weight: 800; font-size: var(--nbtnFz);
       cursor: pointer; user-select: none; touch-action: manipulation;
       transition: transform .06s ease, opacity .15s ease, border-color .15s ease;
+      min-height: 40px;
     }
     .nbtn:active { transform: translateY(1px); }
     .nbtn[disabled] { opacity: .6; }
 
-    .result { padding: 40px 24px; text-align: center; }
-    .result h2 { margin: 0 0 8px; font-size: clamp(28px, 5.2vw, 48px); }
-    .result p  { margin: 0 0 6px; color: var(--muted); font-size: clamp(14px, 2.2vw, 18px); }
+    .result { padding: 28px 20px; text-align: center; }
+    .result h2 { margin: 0; font-size: clamp(28px, 5.2vw, 48px); }
+    .result p  { margin: 8px 0 0; color: var(--muted); font-size: clamp(13px, 2.0vw, 17px); }
 
     .sr-only { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px;
       overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+
+    /* 横向き時の微調整（さらにコンパクトに） */
+    @media (orientation: landscape) {
+      :root { --gridGap: 6px; }
+      .stage { padding: 6px; }
+      header.gamebar { padding: 0; }
+    }
   </style>
 </head>
 <body>
@@ -120,7 +140,7 @@
         <div class="title card">
           <h1>かぞえて<span style="color:#16a34a">10</span></h1>
           <p>えもじを さわって かぞえよう。 ただしい かずを したの すうじで えらぶよ。</p>
-          <div style="margin-top: 20px;">
+          <div style="margin-top: 16px;">
             <button id="btnStart" class="btn">スタート</button>
           </div>
         </div>
@@ -197,6 +217,54 @@
 
   qTotal.textContent = TOTAL;
 
+  // ====== レイアウト調整 ======
+  function updateSafeVH(){
+    // iOS/Safari対策：ツールバーを除いた実測高さを反映
+    const h = window.innerHeight || document.documentElement.clientHeight || 768;
+    document.documentElement.style.setProperty('--safeH', h + 'px');
+  }
+
+  function layoutFit(){
+    updateSafeVH();
+
+    // 現在の画面に応じて、ヘッダー・数字ボタン高さを取得して上限を計算
+    const active = scrGame.classList.contains('active') ? scrGame : (scrTitle.classList.contains('active') ? scrTitle : scrResult);
+
+    // ざっくり余白（パディングやカードの余 白等）
+    const marginReserve = 32; // px
+    let headerH = 0, numpadH = 0;
+
+    if(active === scrGame){
+      const header = active.querySelector('header.gamebar');
+      headerH = header ? header.offsetHeight : 0;
+      numpadH = numPad ? numPad.offsetHeight : 0;
+    }
+
+    const safeH = window.innerHeight || 768;
+    // プレイエリアの上限高さを算出（最低 180px、最大で安全枠内）
+    const maxH = Math.max(180, safeH - headerH - numpadH - marginReserve - 24);
+    document.documentElement.style.setProperty('--playH', maxH + 'px');
+
+    // 絵文字と数字ボタンのサイズも高さに応じて調整
+    // グリッドは4行なので、余裕を見て  playH / 4 * 0.8 くらい
+    const itemFz = Math.max(40, Math.min(96, Math.floor(maxH / 4 * 0.8)));
+    document.documentElement.style.setProperty('--itemFz', itemFz + 'px');
+
+    // 数字ボタンの文字サイズとパディング（小さい画面では縮小）
+    const nbtnFz = Math.max(16, Math.min(28, Math.floor(safeH / 32)));
+    const nbtnPy = Math.max(8,  Math.min(16, Math.floor(safeH / 60)));
+    document.documentElement.style.setProperty('--nbtnFz', nbtnFz + 'px');
+    document.documentElement.style.setProperty('--nbtnPy', nbtnPy + 'px');
+
+    // マス間の隙間も微調整（高さが小さいほど隙間を減らす）
+    const gap = maxH < 360 ? 4 : (maxH < 520 ? 6 : 8);
+    document.documentElement.style.setProperty('--gridGap', gap + 'px');
+  }
+
+  window.addEventListener('resize', layoutFit);
+  window.addEventListener('orientationchange', ()=>{ setTimeout(layoutFit, 50); });
+  document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible') setTimeout(layoutFit, 50); });
+
   // ====== ユーティリティ ======
   function safeScrollTop(){
     try { window.scrollTo({ top: 0, behavior: 'auto' }); }
@@ -220,6 +288,8 @@
     [scrTitle, scrGame, scrResult].forEach(s => s.classList.remove('active'));
     el.classList.add('active');
     safeScrollTop();
+    // 画面切替後に一度レイアウト再計算
+    setTimeout(layoutFit, 0);
   }
 
   // ====== BGM（Web Audio） ======
@@ -312,6 +382,7 @@
 
     renderItems(answer);
     enableNumPad(true);
+    layoutFit(); // 問題描画後に高さ再計算
   }
 
   function renderItems(n){
@@ -322,7 +393,7 @@
     let total=toSafeInt(rows*cols, 20);
     if(total<1) total=20; if(total>5000) total=5000;
 
-    const need = clamp(toSafeInt(n,1), 0, total);
+    const need = Math.min(clamp(toSafeInt(n,1), 0, total), total);
     const cells = Array.from({ length: total }, (_,i)=>i);
     shuffle(cells);
     const picked = cells.slice(0, need);
@@ -405,36 +476,15 @@
 
   function finish(){
     hideOverlay(); // 念のため閉じる
-    show(scrResult);      // スコア表示はしない
+    show(scrResult);
   }
   scrResult.addEventListener('click', resetToTitle, { passive:true });
 
-  // ====== 簡易テスト（内部追加） ======
-  (function selfTest(){
-    const req = ['qNow','qTotal','playArea','fxLayer','numPad','live','overlay','celeBox','btnNext','btnQuit','screenTitle','screenGame','screenResult'];
-    const miss = req.filter(id => !document.getElementById(id));
-    if(miss.length) console.error('[TEST] Missing elements:', miss);
-    else console.log('[TEST] All required elements exist.');
-
-    // 乱数レンジ
-    let ok=true; for(let i=0;i<100;i++){ const v=Math.floor(Math.random()*10)+1; if(v<1||v>10){ ok=false; break; } }
-    console.log('[TEST] Random range 1..10:', ok?'OK':'NG');
-
-    // overlay toggle
-    try{
-      showCorrect();
-      const shown = !overlay.hidden && getComputedStyle(overlay).display !== 'none';
-      hideOverlay(true);
-      const hidden = overlay.hidden && getComputedStyle(overlay).display === 'none';
-      console.log('[TEST] overlay toggle:', (shown && hidden) ? 'OK' : 'NG');
-    }catch(e){ console.error('[TEST] overlay toggle:', e); }
-
-    // renderItemsの堅牢性
-    try{ renderItems(10); console.log('[TEST] renderItems(10): OK'); }catch(e){ console.error('[TEST] renderItems(10):', e); }
-    try{ renderItems(0);  console.log('[TEST] renderItems(0): OK'); }catch(e){ console.error('[TEST] renderItems(0):', e); }
-    try{ renderItems(-5); console.log('[TEST] renderItems(-5): OK'); }catch(e){ console.error('[TEST] renderItems(-5):', e); }
-    try{ renderItems(999);console.log('[TEST] renderItems(999): OK'); }catch(e){ console.error('[TEST] renderItems(999):', e); }
-  })();
+  // 初期レイアウト
+  updateSafeVH();
+  layoutFit();
+  // フォント読み込み後にも再調整（ボタン高さが変わるため）
+  if(document.fonts && document.fonts.ready){ document.fonts.ready.then(()=> setTimeout(layoutFit, 0)); }
 
   // iOS ピンチズーム抑制（任意）
   document.addEventListener('gesturestart', (e)=>{ try{ e.preventDefault(); }catch(_){} }, { passive:false });
